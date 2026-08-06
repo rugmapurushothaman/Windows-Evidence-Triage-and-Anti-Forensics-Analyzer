@@ -1,33 +1,55 @@
 """
 registry.py
 
-Windows Registry Collector
+Registry Collector
 
-Purpose:
---------
-Collect registry artifacts from a Windows system or mounted forensic evidence.
+Author: Rugma Purushothaman
 
-Future Responsibilities:
-- Read Registry hives (SAM, SYSTEM, SOFTWARE, SECURITY, NTUSER.DAT)
-- Extract USB device history
-- Extract user account information
-- Extract installed software
-- Extract system configuration
-- Extract startup and persistence entries
-- Extract recent activity information
-
-Input:
-------
-- Mounted Windows drive
-- Offline Registry hive files
-
-Output:
--------
-Structured registry artifacts for analysis by the analyzers and correlation engine.
-
-Status:
--------
-Planned (Version 2.0)
+Collects basic information from the Windows Registry.
 """
 
-# Implementation will be added in Version 2.0
+import winreg
+
+
+def collect_installed_programs():
+
+    uninstall_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+
+    programs = []
+
+    try:
+
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            uninstall_path
+        )
+
+        subkeys = winreg.QueryInfoKey(key)[0]
+
+        for i in range(subkeys):
+
+            try:
+
+                subkey_name = winreg.EnumKey(key, i)
+
+                subkey = winreg.OpenKey(key, subkey_name)
+
+                try:
+
+                    display_name = winreg.QueryValueEx(
+                        subkey,
+                        "DisplayName"
+                    )[0]
+
+                    programs.append(display_name)
+
+                except FileNotFoundError:
+                    pass
+
+            except:
+                pass
+
+    except:
+        pass
+
+    return programs
