@@ -19,7 +19,6 @@ def print_banner():
 
 def get_evidence_path():
     while True:
-
         path = input("\nEnter the evidence folder path: ").strip()
 
         if os.path.exists(path):
@@ -40,6 +39,7 @@ def main():
 
     print("\nStarting Evidence Collection...\n")
 
+    # Collect metadata
     result = collect_files(evidence_path)
 
     print("=" * 70)
@@ -49,19 +49,22 @@ def main():
     print(f"Folders Found : {result['folder_count']}")
     print(f"Files Found   : {result['file_count']}")
 
-    print("\nFirst 5 Files\n")
+    print("\nDEBUG INFORMATION")
+    print("=" * 70)
 
-    for file_info in result["files"][:5]:
+    print("Type of result        :", type(result))
+    print("Type of result['files']:", type(result["files"]))
 
-        print("-" * 70)
-        print(f"Name       : {file_info['name']}")
-        print(f"Path       : {file_info['path']}")
-        print(f"Extension  : {file_info['extension']}")
-        print(f"Size       : {file_info['size_bytes']} bytes")
-        print(f"Created    : {file_info['created_time']}")
-        print(f"Modified   : {file_info['modified_time']}")
-        print(f"Accessed   : {file_info['accessed_time']}")
-        print(f"Hidden     : {file_info['is_hidden']}")
+    if len(result["files"]) > 0:
+
+        print("Type of first item    :", type(result["files"][0]))
+
+        print("\nFirst item:")
+        print(result["files"][0])
+
+    else:
+
+        print("No files collected.")
 
     print("\nEvidence Collection Completed Successfully.")
 
