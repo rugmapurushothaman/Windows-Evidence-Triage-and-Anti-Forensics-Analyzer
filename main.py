@@ -38,6 +38,12 @@ def main():
     print(evidence_path)
 
     print("\nStarting Evidence Collection...")
+    print("\nStarting Evidence Collection...\n")
+
+result = collect_files(evidence_path)
+
+print("Folders Found :", result["folder_count"])
+print("Files Found   :", result["file_count"])
 
 
 if __name__ == "__main__":
