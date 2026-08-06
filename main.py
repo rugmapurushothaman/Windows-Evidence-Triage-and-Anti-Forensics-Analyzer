@@ -8,6 +8,8 @@ Version: 0.1.0
 
 import os
 
+from collectors.filesystem import collect_files
+
 
 def print_banner():
     print("=" * 70)
