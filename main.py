@@ -4,11 +4,13 @@ main.py
 Windows Evidence Triage & Anti-Forensics Analyzer
 
 Author: Rugma Purushothaman
+Version: 0.2.0
 """
 
 import os
 
 from collectors.filesystem import collect_files
+from collectors.registry import collect_installed_programs
 from analyzers.timestomp import analyze_timestamps
 
 
@@ -37,7 +39,7 @@ def main():
 
     evidence_path = get_evidence_path()
 
-    print("\nCollecting Evidence...\n")
+    print("\nCollecting File System Evidence...\n")
 
     result = collect_files(evidence_path)
 
@@ -59,21 +61,16 @@ def main():
     else:
 
         print("=" * 70)
-        print("Possible Timestamp Manipulation")
+        print("Possible Timestamp Anomalies")
         print("=" * 70)
 
         for item in suspicious:
 
             print("\n----------------------------------------")
-
             print("File :", item["name"])
-
             print("Path :", item["path"])
-
             print("Created :", item["created"])
-
             print("Modified :", item["modified"])
-
             print("Accessed :", item["accessed"])
 
             print("\nFindings:")
@@ -81,7 +78,34 @@ def main():
             for finding in item["findings"]:
                 print(" -", finding)
 
-    print("\nAnalysis Completed.")
+    print("\nTimestamp Analysis Completed.")
+
+    # --------------------------------------------------
+    # Registry Collection
+    # --------------------------------------------------
+
+    print("\n")
+    print("=" * 70)
+    print("Registry Evidence Collection")
+    print("=" * 70)
+
+    programs = collect_installed_programs()
+
+    print(f"\nInstalled Programs Found : {len(programs)}\n")
+
+    if len(programs) == 0:
+
+        print("No installed programs detected.")
+
+    else:
+
+        for program in programs[:20]:
+            print(program)
+
+        if len(programs) > 20:
+            print("\n...more programs omitted...")
+
+    print("\nInvestigation Completed Successfully.")
 
 
 if __name__ == "__main__":
