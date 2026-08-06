@@ -19,6 +19,7 @@ def print_banner():
 
 def get_evidence_path():
     while True:
+
         path = input("\nEnter the evidence folder path: ").strip()
 
         if os.path.exists(path):
@@ -39,7 +40,6 @@ def main():
 
     print("\nStarting Evidence Collection...\n")
 
-    # Collect file system metadata
     result = collect_files(evidence_path)
 
     print("=" * 70)
@@ -49,19 +49,19 @@ def main():
     print(f"Folders Found : {result['folder_count']}")
     print(f"Files Found   : {result['file_count']}")
 
-    print("\nShowing First 5 Files Collected\n")
+    print("\nFirst 5 Files\n")
 
-    for file in result["files"][:5]:
+    for file_info in result["files"][:5]:
 
         print("-" * 70)
-        print(f"Name        : {file['name']}")
-        print(f"Path        : {file['path']}")
-        print(f"Extension   : {file['extension']}")
-        print(f"Size        : {file['size_bytes']} bytes")
-        print(f"Created     : {file['created_time']}")
-        print(f"Modified    : {file['modified_time']}")
-        print(f"Accessed    : {file['accessed_time']}")
-        print(f"Hidden      : {file['is_hidden']}")
+        print(f"Name       : {file_info['name']}")
+        print(f"Path       : {file_info['path']}")
+        print(f"Extension  : {file_info['extension']}")
+        print(f"Size       : {file_info['size_bytes']} bytes")
+        print(f"Created    : {file_info['created_time']}")
+        print(f"Modified   : {file_info['modified_time']}")
+        print(f"Accessed   : {file_info['accessed_time']}")
+        print(f"Hidden     : {file_info['is_hidden']}")
 
     print("\nEvidence Collection Completed Successfully.")
 
