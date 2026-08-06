@@ -2,12 +2,12 @@
 main.py
 
 Windows Evidence Triage & Anti-Forensics Analyzer
+
 Author: Rugma Purushothaman
 Version: 0.1.0
 """
 
 import os
-
 from collectors.filesystem import collect_files
 
 
@@ -34,17 +34,36 @@ def main():
     evidence_path = get_evidence_path()
 
     print("\nEvidence Selected")
-    print("----------------------------")
+    print("-" * 70)
     print(evidence_path)
 
     print("\nStarting Evidence Collection...\n")
 
-    # Call the File System Collector
+    # Collect file system metadata
     result = collect_files(evidence_path)
 
-    # Display the results
-    print("Folders Found :", result["folder_count"])
-    print("Files Found   :", result["file_count"])
+    print("=" * 70)
+    print("Evidence Collection Summary")
+    print("=" * 70)
+
+    print(f"Folders Found : {result['folder_count']}")
+    print(f"Files Found   : {result['file_count']}")
+
+    print("\nShowing First 5 Files Collected\n")
+
+    for file in result["files"][:5]:
+
+        print("-" * 70)
+        print(f"Name        : {file['name']}")
+        print(f"Path        : {file['path']}")
+        print(f"Extension   : {file['extension']}")
+        print(f"Size        : {file['size_bytes']} bytes")
+        print(f"Created     : {file['created_time']}")
+        print(f"Modified    : {file['modified_time']}")
+        print(f"Accessed    : {file['accessed_time']}")
+        print(f"Hidden      : {file['is_hidden']}")
+
+    print("\nEvidence Collection Completed Successfully.")
 
 
 if __name__ == "__main__":
