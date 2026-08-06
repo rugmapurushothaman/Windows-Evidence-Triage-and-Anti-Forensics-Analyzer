@@ -4,27 +4,31 @@ main.py
 Windows Evidence Triage & Anti-Forensics Analyzer
 
 Author: Rugma Purushothaman
-Version: 0.1.0
 """
 
 import os
+
 from collectors.filesystem import collect_files
+from analyzers.timestomp import analyze_timestamps
 
 
 def print_banner():
+
     print("=" * 70)
-    print("     Windows Evidence Triage & Anti-Forensics Analyzer")
+    print("Windows Evidence Triage & Anti-Forensics Analyzer")
     print("=" * 70)
 
 
 def get_evidence_path():
+
     while True:
-        path = input("\nEnter the evidence folder path: ").strip()
+
+        path = input("\nEnter Evidence Folder: ").strip()
 
         if os.path.exists(path):
             return path
 
-        print("\n[ERROR] Invalid folder path. Please try again.")
+        print("Invalid path. Try again.")
 
 
 def main():
@@ -33,40 +37,51 @@ def main():
 
     evidence_path = get_evidence_path()
 
-    print("\nEvidence Selected")
-    print("-" * 70)
-    print(evidence_path)
+    print("\nCollecting Evidence...\n")
 
-    print("\nStarting Evidence Collection...\n")
-
-    # Collect metadata
     result = collect_files(evidence_path)
 
     print("=" * 70)
-    print("Evidence Collection Summary")
+    print("Collection Summary")
     print("=" * 70)
 
-    print(f"Folders Found : {result['folder_count']}")
-    print(f"Files Found   : {result['file_count']}")
+    print("Folders :", result["folder_count"])
+    print("Files   :", result["file_count"])
 
-    print("\nDEBUG INFORMATION")
-    print("=" * 70)
+    print("\nRunning Timestamp Analysis...\n")
 
-    print("Type of result        :", type(result))
-    print("Type of result['files']:", type(result["files"]))
+    suspicious = analyze_timestamps(result["files"])
 
-    if len(result["files"]) > 0:
+    if len(suspicious) == 0:
 
-        print("Type of first item    :", type(result["files"][0]))
-
-        print("\nFirst item:")
-        print(result["files"][0])
+        print("No timestamp anomalies detected.")
 
     else:
 
-        print("No files collected.")
+        print("=" * 70)
+        print("Possible Timestamp Manipulation")
+        print("=" * 70)
 
-    print("\nEvidence Collection Completed Successfully.")
+        for item in suspicious:
+
+            print("\n----------------------------------------")
+
+            print("File :", item["name"])
+
+            print("Path :", item["path"])
+
+            print("Created :", item["created"])
+
+            print("Modified :", item["modified"])
+
+            print("Accessed :", item["accessed"])
+
+            print("\nFindings:")
+
+            for finding in item["findings"]:
+                print(" -", finding)
+
+    print("\nAnalysis Completed.")
 
 
 if __name__ == "__main__":
