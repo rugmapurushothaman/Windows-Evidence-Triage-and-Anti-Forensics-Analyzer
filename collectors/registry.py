@@ -3,9 +3,7 @@ registry.py
 
 Registry Collector
 
-Author: Rugma Purushothaman
-
-Collects basic information from the Windows Registry.
+Collects installed programs from the Windows Registry.
 """
 
 import winreg
@@ -24,9 +22,9 @@ def collect_installed_programs():
             uninstall_path
         )
 
-        subkeys = winreg.QueryInfoKey(key)[0]
+        total = winreg.QueryInfoKey(key)[0]
 
-        for i in range(subkeys):
+        for i in range(total):
 
             try:
 
@@ -46,10 +44,10 @@ def collect_installed_programs():
                 except FileNotFoundError:
                     pass
 
-            except:
+            except Exception:
                 pass
 
-    except:
+    except Exception:
         pass
 
-    return programs
+    return sorted(programs)
