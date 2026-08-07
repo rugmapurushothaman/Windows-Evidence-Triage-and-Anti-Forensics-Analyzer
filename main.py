@@ -4,7 +4,7 @@ main.py
 Windows Evidence Triage & Anti-Forensics Analyzer
 
 Author: Rugma Purushothaman
-Version: 0.3.0
+Version: 0.4.0
 """
 
 import os
@@ -12,6 +12,7 @@ import os
 from collectors.filesystem import collect_files
 from collectors.registry import collect_installed_programs
 from collectors.usb import collect_usb_devices
+from collectors.event_logs import collect_security_events
 from analyzers.timestomp import analyze_timestamps
 
 
@@ -51,6 +52,10 @@ def main():
     print("Folders :", result["folder_count"])
     print("Files   :", result["file_count"])
 
+    # ======================================================
+    # Timestamp Analysis
+    # ======================================================
+
     print("\nRunning Timestamp Analysis...\n")
 
     suspicious = analyze_timestamps(result["files"])
@@ -82,7 +87,7 @@ def main():
     print("\nTimestamp Analysis Completed.")
 
     # ======================================================
-    # Registry Evidence Collection
+    # Registry Collection
     # ======================================================
 
     print("\n")
@@ -107,7 +112,7 @@ def main():
             print("\n...more programs omitted...")
 
     # ======================================================
-    # USB Device Analysis
+    # USB Device Collection
     # ======================================================
 
     print("\n")
@@ -130,6 +135,27 @@ def main():
             print("----------------------------------------")
             print("Device Name   :", device["device_name"])
             print("Serial Number :", device["serial_number"])
+
+    # ======================================================
+    # Event Log Collection
+    # ======================================================
+
+    print("\n")
+    print("=" * 70)
+    print("Security Event Log Collection")
+    print("=" * 70)
+
+    events = collect_security_events()
+
+    if len(events) == 0:
+
+        print("No Security Events Collected.")
+
+    else:
+
+        print(events[0][:2000])
+
+    # ======================================================
 
     print("\nInvestigation Completed Successfully.")
 
