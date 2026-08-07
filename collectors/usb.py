@@ -1,41 +1,66 @@
 """
 usb.py
 
-USB Device History Collector
+Windows Evidence Triage & Anti-Forensics Analyzer
 
-Purpose:
---------
-Collect USB device connection history from Windows Registry artifacts.
+USB Device Collector
 
-Future Responsibilities:
-- Extract connected USB devices
-- Extract device serial numbers
-- Extract first connection time
-- Extract last connection time
-- Extract vendor and product information
-- Support timeline correlation
-
-Input:
-------
-- Mounted Windows drive
-- Windows Registry hives
-  (SYSTEM, SOFTWARE)
-
-Output:
--------
-Structured USB connection history for analysis by the analyzers and
-correlation engine.
-
-Example Output:
----------------
-Device Name : SanDisk Ultra USB
-Serial No.  : 4C530001240517109111
-First Seen  : 2026-08-04 09:15:00
-Last Seen   : 2026-08-05 14:10:21
-
-Status:
--------
-Planned (Version 2.0)
+Author: Rugma Purushothaman
 """
 
-# Implementation will be added in Version 2.0
+import winreg
+
+
+def collect_usb_devices():
+
+    usb_devices = []
+
+    registry_path = r"SYSTEM\CurrentControlSet\Enum\USBSTOR"
+
+    try:
+
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            registry_path
+        )
+
+        device_count = winreg.QueryInfoKey(key)[0]
+
+        for i in range(device_count):
+
+            device_name = winreg.EnumKey(key, i)
+
+            device_key = winreg.OpenKey(
+                key,
+                device_name
+            )
+
+            serial_count = winreg.QueryInfoKey(device_key)[0]
+
+            for j in range(serial_count):
+
+                serial_number = winreg.EnumKey(
+                    device_key,
+                    j
+                )
+
+                usb_devices.append({
+
+                    "device_name": device_name,
+                    "serial_number": serial_number
+
+                })
+
+    except FileNotFoundError:
+
+        print("USB Registry key not found.")
+
+    except PermissionError:
+
+        print("Permission denied while reading Registry.")
+
+    except Exception as error:
+
+        print("USB Collector Error:", error)
+
+    return usb_devices
