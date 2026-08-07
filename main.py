@@ -4,13 +4,14 @@ main.py
 Windows Evidence Triage & Anti-Forensics Analyzer
 
 Author: Rugma Purushothaman
-Version: 0.2.0
+Version: 0.3.0
 """
 
 import os
 
 from collectors.filesystem import collect_files
 from collectors.registry import collect_installed_programs
+from collectors.usb import collect_usb_devices
 from analyzers.timestomp import analyze_timestamps
 
 
@@ -80,9 +81,9 @@ def main():
 
     print("\nTimestamp Analysis Completed.")
 
-    # --------------------------------------------------
-    # Registry Collection
-    # --------------------------------------------------
+    # ======================================================
+    # Registry Evidence Collection
+    # ======================================================
 
     print("\n")
     print("=" * 70)
@@ -104,6 +105,31 @@ def main():
 
         if len(programs) > 20:
             print("\n...more programs omitted...")
+
+    # ======================================================
+    # USB Device Analysis
+    # ======================================================
+
+    print("\n")
+    print("=" * 70)
+    print("USB Device Analysis")
+    print("=" * 70)
+
+    usb_devices = collect_usb_devices()
+
+    print(f"\nUSB Devices Found : {len(usb_devices)}\n")
+
+    if len(usb_devices) == 0:
+
+        print("No USB storage devices found.")
+
+    else:
+
+        for device in usb_devices:
+
+            print("----------------------------------------")
+            print("Device Name   :", device["device_name"])
+            print("Serial Number :", device["serial_number"])
 
     print("\nInvestigation Completed Successfully.")
 
