@@ -1,46 +1,45 @@
 """
 log_wipe.py
 
-Windows Event Log Wipe Analyzer
-
-Purpose:
---------
-Analyze Windows Event Logs to detect evidence of log clearing or
-tampering that may indicate anti-forensic activity.
-
-Future Responsibilities:
-- Detect Security Log clearing
-- Detect System Log clearing
-- Detect Application Log clearing
-- Identify user responsible (when available)
-- Record timestamp of log wipe
-- Support timeline correlation
-
-Input:
-------
-Windows Event Log artifacts collected by the Event Log Collector.
-
-Output:
--------
-List of detected log clearing events.
-
-Example Output:
----------------
-Log:
-Security
-
-Event ID:
-1102
-
-Time:
-2026-08-05 14:15:12
-
-Finding:
-Security Event Log Cleared
-
-Status:
--------
-Planned (Version 2.0)
+Analyze Security Event Logs for important forensic events.
 """
 
-# Implementation will be added in Version 2.0
+
+def analyze_security_events(event_text):
+
+    findings = []
+
+    event_map = {
+        "1102": {
+            "name": "Security Log Cleared",
+            "severity": "HIGH"
+        },
+        "4624": {
+            "name": "Successful Logon",
+            "severity": "INFO"
+        },
+        "4625": {
+            "name": "Failed Logon",
+            "severity": "MEDIUM"
+        },
+        "4720": {
+            "name": "User Account Created",
+            "severity": "HIGH"
+        },
+        "5379": {
+            "name": "Credential Manager Access",
+            "severity": "LOW"
+        }
+    }
+
+    for event_id, details in event_map.items():
+
+        if f"Event ID: {event_id}" in event_text:
+
+            findings.append({
+                "event_id": event_id,
+                "name": details["name"],
+                "severity": details["severity"]
+            })
+
+    return findings
