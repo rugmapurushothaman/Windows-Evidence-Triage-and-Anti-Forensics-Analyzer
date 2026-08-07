@@ -28,14 +28,18 @@ def collect_security_events():
 
         output = subprocess.check_output(
             command,
-            text=True,
-            errors="ignore"
+            universal_newlines=True,
+            stderr=subprocess.STDOUT
         )
 
         events.append(output)
 
+    except subprocess.CalledProcessError as error:
+
+        events.append(error.output)
+
     except Exception as error:
 
-        events.append(f"Error reading Security log: {error}")
+        events.append(str(error))
 
     return events
