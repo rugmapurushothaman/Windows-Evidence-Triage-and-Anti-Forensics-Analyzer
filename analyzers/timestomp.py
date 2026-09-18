@@ -1,83 +1,113 @@
 """
 timestomp.py
 
-Timestamp Analyzer
+Windows Evidence Triage & Anti-Forensics Analyzer
 
-Detects possible timestamp manipulation.
+Timestamp Anomaly Analyzer
+
+Author: Rugma Purushothaman
+
+Purpose:
+--------
+Identify files with potentially unusual filesystem timestamps.
+
+Important:
+-----------
+A timestamp anomaly is an indicator for further investigation.
+It is NOT by itself proof of timestomping or malicious activity.
 """
 
 from datetime import datetime
 
 
+def parse_time(value):
+
+    if isinstance(value, datetime):
+        return value
+
+    try:
+        return datetime.strptime(
+            value,
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+    except (TypeError, ValueError):
+
+        return None
+
+
 def analyze_timestamps(files):
 
-    suspicious_files = []
+    findings = []
 
-    for file in files:
+    for file_info in files:
 
-        try:
+        created = parse_time(
+            file_info.get("created_time")
+        )
 
-            created = datetime.strptime(
-                file["created_time"],
-                "%Y-%m-%d %H:%M:%S"
-            )
+        modified = parse_time(
+            file_info.get("modified_time")
+        )
 
-            modified = datetime.strptime(
-                file["modified_time"],
-                "%Y-%m-%d %H:%M:%S"
-            )
+        accessed = parse_time(
+            file_info.get("accessed_time")
+        )
 
-            accessed = datetime.strptime(
-                file["accessed_time"],
-                "%Y-%m-%d %H:%M:%S"
-            )
-
-            findings = []
-
-            # Modified earlier than created
-            if modified < created:
-                findings.append(
-                    "Modified time is earlier than Created time"
-                )
-
-            # Accessed earlier than created
-            if accessed < created:
-                findings.append(
-                    "Accessed time is earlier than Created time"
-                )
-
-            # Future timestamps
-            now = datetime.now()
-
-            if created > now:
-                findings.append("Created time is in the future")
-
-            if modified > now:
-                findings.append("Modified time is in the future")
-
-            if accessed > now:
-                findings.append("Accessed time is in the future")
-
-            if findings:
-
-                suspicious_files.append({
-
-                    "name": file["name"],
-
-                    "path": file["path"],
-
-                    "created": file["created_time"],
-
-                    "modified": file["modified_time"],
-
-                    "accessed": file["accessed_time"],
-
-                    "findings": findings
-
-                })
-
-        except Exception:
+        if created is None or modified is None:
 
             continue
 
-    return suspicious_files
+        file_findings = []
+
+        # --------------------------------------------------
+        # Check 1: Modified before Created
+        # --------------------------------------------------
+
+        if modified < created:
+
+            file_findings.append(
+                "Modified time is earlier than Created time"
+            )
+
+        # --------------------------------------------------
+        # Check 2: Accessed significantly before Created
+        # --------------------------------------------------
+
+        if accessed is not None:
+
+            if accessed < created:
+
+                file_findings.append(
+                    "Accessed time is earlier than Created time"
+                )
+
+        # --------------------------------------------------
+        # Only return files with findings
+        # --------------------------------------------------
+
+        if len(file_findings) > 0:
+
+            findings.append({
+
+                "name": file_info.get("name"),
+
+                "path": file_info.get("path"),
+
+                "created": file_info.get(
+                    "created_time"
+                ),
+
+                "modified": file_info.get(
+                    "modified_time"
+                ),
+
+                "accessed": file_info.get(
+                    "accessed_time"
+                ),
+
+                "findings": file_findings
+
+            })
+
+    return findings
