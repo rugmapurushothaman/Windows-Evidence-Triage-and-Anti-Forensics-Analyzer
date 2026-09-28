@@ -1,40 +1,79 @@
-"""
-recycle_bin.py
+# collectors/recycle_bin.py
 
-Recycle Bin Collector
+import os
+import glob
 
-Purpose:
---------
-Collect forensic artifacts from the Windows Recycle Bin.
+from utils.logger import get_logger
 
-Future Responsibilities:
-- Identify deleted files
-- Extract original file paths
-- Extract deletion timestamps
-- Recover metadata from $I files
-- Identify recently deleted evidence
-- Support forensic timeline generation
 
-Input:
-------
-- Mounted Windows drive
-- Windows Recycle Bin
-  ($Recycle.Bin)
+logger = get_logger("recycle_bin")
 
-Output:
--------
-Structured Recycle Bin artifact data for analysis by the analyzers and
-correlation engine.
 
-Example Output:
----------------
-Deleted File : invoice.pdf
-Original Path: C:\Users\John\Documents
-Deleted Time : 2026-08-05 10:14:53
+def get_recycle_bin_paths():
 
-Status:
--------
-Planned (Version 2.0)
-"""
+    paths = []
 
-# Implementation will be added in Version 2.0
+    for drive_letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+
+        recycle_path = (
+            drive_letter +
+            ":\\$Recycle.Bin"
+        )
+
+        if os.path.isdir(recycle_path):
+
+            paths.append(
+                recycle_path
+            )
+
+    return paths
+
+
+def collect_recycle_bin():
+
+    results = []
+
+    recycle_paths = get_recycle_bin_paths()
+
+    for recycle_path in recycle_paths:
+
+        try:
+
+            for root, directories, files in os.walk(
+                recycle_path
+            ):
+
+                for filename in files:
+
+                    file_path = os.path.join(
+                        root,
+                        filename
+                    )
+
+                    try:
+
+                        stat_info = os.stat(
+                            file_path
+                        )
+
+                        results.append({
+                            "type": "RECYCLE_BIN",
+                            "name": filename,
+                            "path": file_path,
+                            "size_bytes": stat_info.st_size,
+                            "created_time": stat_info.st_ctime,
+                            "modified_time": stat_info.st_mtime,
+                            "accessed_time": stat_info.st_atime
+                        })
+
+                    except Exception:
+                        pass
+
+        except Exception as error:
+
+            logger.error(
+                "Recycle Bin error: %s",
+                error
+            )
+
+    return results
