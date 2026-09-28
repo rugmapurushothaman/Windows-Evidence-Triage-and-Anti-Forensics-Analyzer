@@ -1,18 +1,3 @@
-"""
-main.py
-
-Windows Evidence Triage & Anti-Forensics Analyzer
-
-Author: Rugma Purushothaman
-
-Purpose:
-    Graphical interface for Windows forensic triage.
-
-    This file controls the existing forensic collectors and analyzers.
-    The existing collector/analyzer files are preserved and will be
-    corrected individually later.
-"""
-
 import os
 import threading
 import traceback
@@ -21,11 +6,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-
-
-# ==========================================================
-# EXISTING FORENSIC MODULES
-# ==========================================================
 
 from collectors.filesystem import collect_files
 from collectors.registry import collect_installed_programs
@@ -48,11 +28,7 @@ from utils.logger import get_logger
 logger = get_logger("main")
 
 
-# ==========================================================
-# APPLICATION
-# ==========================================================
-
-class ForensicApplication(object):
+class ForensicApplication:
 
     def __init__(self, root):
 
@@ -66,121 +42,85 @@ class ForensicApplication(object):
 
         self.root.minsize(1100, 650)
 
-        # --------------------------------------------------
-        # Investigation data
-        # --------------------------------------------------
+        # ============================================================
+        # DATA VARIABLES
+        # ============================================================
 
         self.evidence_path = ""
 
         self.filesystem_result = {}
+
         self.timestamp_findings = []
+
         self.suspicious_files = []
+
         self.programs = []
+
         self.usb_devices = []
+
         self.events = []
+
         self.ads_findings = []
-        self.browser_results = []
+
+        self.browser_results = {}
+
         self.browser_findings = []
+
         self.prefetch_results = []
+
         self.recycle_results = []
 
         self.all_findings = []
+
         self.timeline = []
 
         self.investigation_running = False
 
-        # --------------------------------------------------
-        # Build interface
-        # --------------------------------------------------
+        # ============================================================
+        # BUILD GUI
+        # ============================================================
 
-        self.create_interface()
+        self.build_gui()
 
+    # ================================================================
+    # GUI
+    # ================================================================
 
-    # ======================================================
-    # INTERFACE
-    # ======================================================
+    def build_gui(self):
 
-    def create_interface(self):
+        # ------------------------------------------------------------
+        # TOP FRAME
+        # ------------------------------------------------------------
 
-        # --------------------------------------------------
-        # Header
-        # --------------------------------------------------
+        top_frame = ttk.Frame(self.root)
 
-        header = tk.Frame(
-            self.root,
-            bg="#202020",
-            height=80
+        top_frame.pack(
+            fill="x",
+            padx=10,
+            pady=10
         )
 
-        header.pack(
-            fill="x"
-        )
-
-        title = tk.Label(
-            header,
-            text="WINDOWS EVIDENCE TRIAGE & ANTI-FORENSICS ANALYZER",
-            bg="#202020",
-            fg="white",
-            font=("Segoe UI", 18, "bold")
-        )
-
-        title.pack(
-            pady=(15, 2)
-        )
-
-        subtitle = tk.Label(
-            header,
-            text="Digital Evidence Collection • Triage • Analysis • Reporting",
-            bg="#202020",
-            fg="#cccccc",
-            font=("Segoe UI", 10)
-        )
-
-        subtitle.pack()
-
-
-        # --------------------------------------------------
-        # Evidence selection
-        # --------------------------------------------------
-
-        evidence_frame = tk.Frame(
-            self.root,
-            padx=15,
-            pady=12
-        )
-
-        evidence_frame.pack(
-            fill="x"
-        )
-
-
-        tk.Label(
-            evidence_frame,
-            text="Evidence Folder:",
-            font=("Segoe UI", 10, "bold")
+        ttk.Label(
+            top_frame,
+            text="Evidence Folder:"
         ).pack(
             side="left"
         )
 
-
-        self.path_entry = tk.Entry(
-            evidence_frame,
-            font=("Segoe UI", 10)
+        self.evidence_entry = ttk.Entry(
+            top_frame,
+            width=80
         )
 
-        self.path_entry.pack(
+        self.evidence_entry.pack(
             side="left",
-            fill="x",
-            expand=True,
-            padx=10
+            padx=5
         )
 
-
-        browse_button = tk.Button(
-            evidence_frame,
+        browse_button = ttk.Button(
+            top_frame,
             text="Browse",
-            width=12,
-            command=self.browse_folder
+            command=self.browse_evidence
         )
 
         browse_button.pack(
@@ -188,321 +128,252 @@ class ForensicApplication(object):
             padx=5
         )
 
-
-        self.start_button = tk.Button(
-            evidence_frame,
+        self.start_button = ttk.Button(
+            top_frame,
             text="START INVESTIGATION",
-            width=22,
-            command=self.start_investigation,
-            bg="#303030",
-            fg="white",
-            font=("Segoe UI", 10, "bold")
+            command=self.start_investigation
         )
 
         self.start_button.pack(
             side="left",
-            padx=5
+            padx=10
         )
 
+        # ------------------------------------------------------------
+        # STATUS
+        # ------------------------------------------------------------
 
-        # --------------------------------------------------
-        # Progress
-        # --------------------------------------------------
+        status_frame = ttk.Frame(self.root)
 
-        progress_frame = tk.Frame(
-            self.root,
-            padx=15
+        status_frame.pack(
+            fill="x",
+            padx=10,
+            pady=5
         )
 
-        progress_frame.pack(
-            fill="x"
-        )
-
-
-        self.status_label = tk.Label(
-            progress_frame,
-            text="Ready",
-            anchor="w",
-            font=("Segoe UI", 9)
+        self.status_label = ttk.Label(
+            status_frame,
+            text="Ready"
         )
 
         self.status_label.pack(
-            fill="x"
+            side="left"
         )
 
-
         self.progress = ttk.Progressbar(
-            progress_frame,
+            status_frame,
             mode="indeterminate"
         )
 
         self.progress.pack(
+            side="right",
             fill="x",
-            pady=(3, 10)
+            expand=True,
+            padx=10
         )
 
-
-        # --------------------------------------------------
-        # Main notebook
-        # --------------------------------------------------
-
-        notebook_frame = tk.Frame(
-            self.root,
-            padx=15
-        )
-
-        notebook_frame.pack(
-            fill="both",
-            expand=True
-        )
-
+        # ------------------------------------------------------------
+        # NOTEBOOK
+        # ------------------------------------------------------------
 
         self.notebook = ttk.Notebook(
-            notebook_frame
+            self.root
         )
 
         self.notebook.pack(
             fill="both",
-            expand=True
+            expand=True,
+            padx=10,
+            pady=10
         )
 
+        # ============================================================
+        # TABS
+        # ============================================================
 
-        # --------------------------------------------------
-        # Create tabs
-        # --------------------------------------------------
-
-        self.dashboard_tab = self.create_tab(
-            "Dashboard"
-        )
-
-        self.files_tab = self.create_tab(
-            "File System"
-        )
-
-        self.timestamp_tab = self.create_tab(
-            "Timestamps"
-        )
-
-        self.suspicious_tab = self.create_tab(
-            "Suspicious Files"
-        )
-
-        self.registry_tab = self.create_tab(
-            "Registry"
-        )
-
-        self.usb_tab = self.create_tab(
-            "USB"
-        )
-
-        self.events_tab = self.create_tab(
-            "Event Logs"
-        )
-
-        self.ads_tab = self.create_tab(
-            "ADS"
-        )
-
-        self.browser_tab = self.create_tab(
-            "Browser"
-        )
-
-        self.prefetch_tab = self.create_tab(
-            "Prefetch"
-        )
-
-        self.recycle_tab = self.create_tab(
-            "Recycle Bin"
-        )
-
-        self.timeline_tab = self.create_tab(
-            "Timeline"
-        )
-
-        self.correlation_tab = self.create_tab(
-            "Correlation"
-        )
-
-        self.reports_tab = self.create_tab(
-            "Reports"
-        )
-
-
-        # --------------------------------------------------
-        # Dashboard
-        # --------------------------------------------------
-
-        self.create_dashboard()
-
-
-    # ======================================================
-    # CREATE TAB
-    # ======================================================
-
-    def create_tab(self, name):
-
-        frame = tk.Frame(
+        self.dashboard_tab = ttk.Frame(
             self.notebook
         )
 
+        self.filesystem_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.timestamps_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.suspicious_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.registry_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.usb_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.events_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.ads_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.browser_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.prefetch_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.recycle_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.timeline_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.correlation_tab = ttk.Frame(
+            self.notebook
+        )
+
+        self.reports_tab = ttk.Frame(
+            self.notebook
+        )
+
+        # ------------------------------------------------------------
+        # ADD TABS
+        # ------------------------------------------------------------
+
         self.notebook.add(
-            frame,
-            text=name
-        )
-
-        return frame
-
-
-    # ======================================================
-    # DASHBOARD
-    # ======================================================
-
-    def create_dashboard(self):
-
-        title = tk.Label(
             self.dashboard_tab,
-            text="INVESTIGATION DASHBOARD",
-            font=("Segoe UI", 16, "bold")
+            text="Dashboard"
         )
 
-        title.pack(
-            pady=20
+        self.notebook.add(
+            self.filesystem_tab,
+            text="File System"
         )
 
+        self.notebook.add(
+            self.timestamps_tab,
+            text="Timestamps"
+        )
 
-        self.dashboard_path = tk.Label(
+        self.notebook.add(
+            self.suspicious_tab,
+            text="Suspicious Files"
+        )
+
+        self.notebook.add(
+            self.registry_tab,
+            text="Registry"
+        )
+
+        self.notebook.add(
+            self.usb_tab,
+            text="USB"
+        )
+
+        self.notebook.add(
+            self.events_tab,
+            text="Event Logs"
+        )
+
+        self.notebook.add(
+            self.ads_tab,
+            text="ADS"
+        )
+
+        self.notebook.add(
+            self.browser_tab,
+            text="Browser"
+        )
+
+        self.notebook.add(
+            self.prefetch_tab,
+            text="Prefetch"
+        )
+
+        self.notebook.add(
+            self.recycle_tab,
+            text="Recycle Bin"
+        )
+
+        self.notebook.add(
+            self.timeline_tab,
+            text="Timeline"
+        )
+
+        self.notebook.add(
+            self.correlation_tab,
+            text="Correlation"
+        )
+
+        self.notebook.add(
+            self.reports_tab,
+            text="Reports"
+        )
+
+        # ------------------------------------------------------------
+        # DASHBOARD
+        # ------------------------------------------------------------
+
+        self.dashboard_text = tk.Text(
             self.dashboard_tab,
-            text="Evidence Source: Not selected",
-            font=("Segoe UI", 10)
+            wrap="word"
         )
 
-        self.dashboard_path.pack(
-            pady=5
+        self.dashboard_text.pack(
+            fill="both",
+            expand=True,
+            padx=10,
+            pady=10
         )
 
+        # ------------------------------------------------------------
+        # INITIAL REPORT BUTTONS
+        # ------------------------------------------------------------
 
-        cards_frame = tk.Frame(
-            self.dashboard_tab
-        )
+        self.build_reports_tab()
 
-        cards_frame.pack(
-            fill="x",
-            padx=30,
-            pady=25
-        )
+    # ================================================================
+    # BROWSE
+    # ================================================================
 
+    def browse_evidence(self):
 
-        self.dashboard_values = {}
-
-
-        categories = [
-            ("Files", "files"),
-            ("Folders", "folders"),
-            ("Timestamp Findings", "timestamps"),
-            ("Suspicious Files", "suspicious"),
-            ("Installed Programs", "programs"),
-            ("USB Devices", "usb"),
-            ("Event Logs", "events"),
-            ("ADS Findings", "ads"),
-            ("Browser Findings", "browser"),
-            ("Prefetch Files", "prefetch"),
-            ("Recycle Bin Items", "recycle"),
-            ("Correlated Findings", "correlation")
-        ]
-
-
-        for index, item in enumerate(categories):
-
-            label = item[0]
-            key = item[1]
-
-            row = index // 4
-            column = index % 4
-
-
-            card = tk.Frame(
-                cards_frame,
-                relief="groove",
-                borderwidth=1,
-                padx=20,
-                pady=15
-            )
-
-            card.grid(
-                row=row,
-                column=column,
-                padx=8,
-                pady=8,
-                sticky="nsew"
-            )
-
-
-            cards_frame.grid_columnconfigure(
-                column,
-                weight=1
-            )
-
-
-            name_label = tk.Label(
-                card,
-                text=label,
-                font=("Segoe UI", 9)
-            )
-
-            name_label.pack()
-
-
-            value_label = tk.Label(
-                card,
-                text="0",
-                font=("Segoe UI", 20, "bold")
-            )
-
-            value_label.pack(
-                pady=(5, 0)
-            )
-
-
-            self.dashboard_values[key] = value_label
-
-
-        self.dashboard_status = tk.Label(
-            self.dashboard_tab,
-            text="No investigation has been started.",
-            font=("Segoe UI", 11)
-        )
-
-        self.dashboard_status.pack(
-            pady=30
-        )
-
-
-    # ======================================================
-    # BROWSE FOLDER
-    # ======================================================
-
-    def browse_folder(self):
-
-        folder = filedialog.askdirectory(
+        path = filedialog.askdirectory(
             title="Select Evidence Folder"
         )
 
-        if folder:
+        if path:
 
-            self.path_entry.delete(
+            self.evidence_path = path
+
+            self.evidence_entry.delete(
                 0,
                 tk.END
             )
 
-            self.path_entry.insert(
+            self.evidence_entry.insert(
                 0,
-                folder
+                path
             )
 
+            self.status_label.config(
+                text="Evidence folder selected: " + path
+            )
 
-    # ======================================================
+    # ================================================================
     # START INVESTIGATION
-    # ======================================================
+    # ================================================================
 
     def start_investigation(self):
 
@@ -510,9 +381,7 @@ class ForensicApplication(object):
 
             return
 
-
-        path = self.path_entry.get().strip()
-
+        path = self.evidence_entry.get().strip()
 
         if not path:
 
@@ -523,27 +392,16 @@ class ForensicApplication(object):
 
             return
 
-
         if not os.path.exists(path):
 
             messagebox.showerror(
                 "Invalid Evidence Folder",
-                "The selected folder does not exist."
+                "The selected evidence folder does not exist."
             )
 
             return
 
-
-        self.evidence_path = os.path.abspath(
-            path
-        )
-
-
-        # --------------------------------------------------
-        # Clear previous data
-        # --------------------------------------------------
-
-        self.clear_data()
+        self.evidence_path = path
 
         self.investigation_running = True
 
@@ -551,45 +409,33 @@ class ForensicApplication(object):
             state="disabled"
         )
 
-        self.progress.start(
-            10
-        )
-
+        self.progress.start(10)
 
         self.status_label.config(
-            text="Investigation started..."
+            text="Investigation running..."
         )
 
+        self.clear_data()
 
-        self.dashboard_status.config(
-            text="Investigation in progress..."
-        )
-
-
-        # --------------------------------------------------
-        # Run investigation in background
-        # --------------------------------------------------
-
-        worker = threading.Thread(
+        thread = threading.Thread(
             target=self.run_investigation
         )
 
-        worker.daemon = True
+        thread.daemon = True
 
-        worker.start()
+        thread.start()
 
-
-    # ======================================================
+    # ================================================================
     # RUN INVESTIGATION
-    # ======================================================
+    # ================================================================
 
     def run_investigation(self):
 
         try:
 
-            # ==================================================
+            # --------------------------------------------------------
             # FILE SYSTEM
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
                 "Collecting file system evidence..."
@@ -599,42 +445,38 @@ class ForensicApplication(object):
                 self.evidence_path
             )
 
+            files = self.filesystem_result.get(
+                "files",
+                []
+            )
 
-            # ==================================================
-            # TIMESTAMP ANALYSIS
-            # ==================================================
+            # --------------------------------------------------------
+            # TIMESTAMPS
+            # --------------------------------------------------------
 
             self.update_status(
                 "Analyzing timestamps..."
             )
 
             self.timestamp_findings = analyze_timestamps(
-                self.filesystem_result.get(
-                    "files",
-                    []
-                )
+                files
             )
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # SUSPICIOUS FILES
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
                 "Analyzing suspicious files..."
             )
 
             self.suspicious_files = analyze_files(
-                self.filesystem_result.get(
-                    "files",
-                    []
-                )
+                files
             )
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # REGISTRY
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
                 "Collecting installed programs..."
@@ -642,64 +484,74 @@ class ForensicApplication(object):
 
             self.programs = collect_installed_programs()
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # USB
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
-                "Collecting USB devices..."
+                "Collecting USB device evidence..."
             )
 
             self.usb_devices = collect_usb_devices()
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # EVENT LOGS
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
-                "Collecting Security event logs..."
+                "Collecting Windows security events..."
             )
 
             self.events = collect_security_events()
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # ADS
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
                 "Analyzing Alternate Data Streams..."
             )
 
             self.ads_findings = analyze_ads(
-                self.filesystem_result.get(
-                    "files",
-                    []
-                )
+                files
             )
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # BROWSER
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
-                "Collecting browser artifacts..."
+                "Analyzing browser artifacts..."
             )
 
-            self.browser_results = collect_browser_artifacts()
+            try:
 
+                self.browser_results = collect_browser_artifacts(
+                    self.evidence_path
+                )
 
-            self.browser_findings = analyze_all_browsers(
-                self.browser_results
-            )
+            except TypeError:
 
+                # Compatibility with an older browser collector
+                self.browser_results = collect_browser_artifacts()
 
-            # ==================================================
+            try:
+
+                self.browser_findings = analyze_all_browsers(
+                    self.browser_results
+                )
+
+            except Exception:
+
+                logger.exception(
+                    "Browser cleanup analysis failed"
+                )
+
+                self.browser_findings = []
+
+            # --------------------------------------------------------
             # PREFETCH
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
                 "Collecting Prefetch artifacts..."
@@ -707,10 +559,9 @@ class ForensicApplication(object):
 
             self.prefetch_results = collect_prefetch()
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # RECYCLE BIN
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
                 "Collecting Recycle Bin artifacts..."
@@ -718,10 +569,9 @@ class ForensicApplication(object):
 
             self.recycle_results = collect_recycle_bin()
 
-
-            # ==================================================
+            # --------------------------------------------------------
             # BUILD FINDINGS
-            # ==================================================
+            # --------------------------------------------------------
 
             self.update_status(
                 "Building investigation findings..."
@@ -729,10 +579,9 @@ class ForensicApplication(object):
 
             self.build_findings()
 
-
-            # ==================================================
-            # TIMELINE
-            # ==================================================
+            # --------------------------------------------------------
+            # BUILD TIMELINE
+            # --------------------------------------------------------
 
             self.update_status(
                 "Building forensic timeline..."
@@ -740,21 +589,19 @@ class ForensicApplication(object):
 
             self.build_timeline()
 
-
-            # ==================================================
-            # UPDATE GUI
-            # ==================================================
+            # --------------------------------------------------------
+            # DISPLAY
+            # --------------------------------------------------------
 
             self.root.after(
                 0,
                 self.display_results
             )
 
-
         except Exception as error:
 
             logger.exception(
-                "Investigation failed."
+                "Investigation failed"
             )
 
             self.root.after(
@@ -764,400 +611,181 @@ class ForensicApplication(object):
                 )
             )
 
+    # ================================================================
+    # STATUS
+    # ================================================================
 
-    # ======================================================
+    def update_status(self, text):
+
+        self.root.after(
+            0,
+            lambda: self.status_label.config(
+                text=text
+            )
+        )
+
+    # ================================================================
     # BUILD FINDINGS
-    # ======================================================
+    # ================================================================
 
     def build_findings(self):
 
         self.all_findings = []
 
+        # ------------------------------------------------------------
+        # TIMESTAMP FINDINGS
+        # ------------------------------------------------------------
 
-        # --------------------------------------------------
-        # Suspicious files
-        # --------------------------------------------------
+        if self.timestamp_findings:
 
-        for item in self.suspicious_files:
+            for item in self.timestamp_findings:
 
-            finding = dict(item)
+                self.all_findings.append(
+                    {
+                        "category": "Timestamp",
+                        "finding": item
+                    }
+                )
 
-            finding["category"] = (
-                "Suspicious Files"
-            )
+        # ------------------------------------------------------------
+        # SUSPICIOUS FILES
+        # ------------------------------------------------------------
 
-            self.all_findings.append(
-                finding
-            )
+        if self.suspicious_files:
 
+            for item in self.suspicious_files:
 
-        # --------------------------------------------------
-        # Browser
-        # --------------------------------------------------
+                self.all_findings.append(
+                    {
+                        "category": "Suspicious File",
+                        "finding": item
+                    }
+                )
 
-        for item in self.browser_findings:
-
-            finding = dict(item)
-
-            finding["category"] = (
-                "Browser"
-            )
-
-            self.all_findings.append(
-                finding
-            )
-
-
-        # --------------------------------------------------
-        # Timestamp
-        # --------------------------------------------------
-
-        for item in self.timestamp_findings:
-
-            finding = {
-                "category":
-                    "Timestamps",
-
-                "type":
-                    "TIMESTAMP_ANOMALY",
-
-                "severity":
-                    "REVIEW",
-
-                "file":
-                    item.get(
-                        "path",
-                        ""
-                    ),
-
-                "description":
-                    "Possible timestamp inconsistency detected."
-            }
-
-            self.all_findings.append(
-                finding
-            )
-
-
-        # --------------------------------------------------
+        # ------------------------------------------------------------
         # ADS
-        # --------------------------------------------------
+        # ------------------------------------------------------------
 
-        for item in self.ads_findings:
+        if self.ads_findings:
 
-            finding = {
-                "category":
-                    "ADS",
+            for item in self.ads_findings:
 
-                "type":
-                    "ALTERNATE_DATA_STREAM",
+                self.all_findings.append(
+                    {
+                        "category": "ADS",
+                        "finding": item
+                    }
+                )
 
-                "severity":
-                    "REVIEW",
+        # ------------------------------------------------------------
+        # BROWSER
+        # ------------------------------------------------------------
 
-                "file":
-                    item.get(
-                        "path",
-                        ""
-                    ),
+        if self.browser_findings:
 
-                "description":
-                    "NTFS Alternate Data Stream detected."
-            }
+            for item in self.browser_findings:
 
-            self.all_findings.append(
-                finding
-            )
+                self.all_findings.append(
+                    {
+                        "category": "Browser",
+                        "finding": item
+                    }
+                )
 
+        # ------------------------------------------------------------
+        # EVENTS
+        # ------------------------------------------------------------
 
-    # ======================================================
+        if self.events:
+
+            for item in self.events:
+
+                self.all_findings.append(
+                    {
+                        "category": "Event Log",
+                        "finding": item
+                    }
+                )
+
+    # ================================================================
     # BUILD TIMELINE
-    # ======================================================
+    # ================================================================
 
     def build_timeline(self):
 
-        timeline_events = []
+        try:
 
+            events = []
 
-        # --------------------------------------------------
-        # Suspicious files
-        # --------------------------------------------------
+            # --------------------------------------------------------
+            # EVENT LOGS
+            # --------------------------------------------------------
 
-        for item in self.suspicious_files:
+            for event in self.events:
 
-            timeline_events.append({
+                if isinstance(event, dict):
 
-                "type":
-                    item.get(
-                        "type",
-                        "SUSPICIOUS_FILE"
-                    ),
+                    item = dict(event)
 
-                "description":
-                    item.get(
-                        "description",
-                        ""
-                    ),
+                    item["source"] = "Windows Event Log"
 
-                "path":
-                    item.get(
-                        "file",
-                        ""
-                    ),
+                    events.append(item)
 
-                "severity":
-                    item.get(
-                        "severity",
-                        "UNKNOWN"
-                    ),
+            # --------------------------------------------------------
+            # USB
+            # --------------------------------------------------------
 
-                "source":
-                    "File System"
+            for device in self.usb_devices:
 
-            })
+                if not isinstance(device, dict):
 
+                    continue
 
-        # --------------------------------------------------
-        # Timestamp findings
-        # --------------------------------------------------
+                observations = device.get(
+                    "observations",
+                    []
+                )
 
-        for item in self.timestamp_findings:
+                for observation in observations:
 
-            timeline_events.append({
+                    if not isinstance(observation, dict):
 
-                "type":
-                    "TIMESTAMP_ANOMALY",
+                        continue
 
-                "description":
-                    "Possible timestamp inconsistency",
+                    item = dict(observation)
 
-                "path":
-                    item.get(
-                        "path",
-                        ""
-                    ),
+                    item["source"] = "USB / SetupAPI"
 
-                "severity":
-                    "REVIEW",
-
-                "source":
-                    "Timestamp Analyzer",
-
-                "timestamp":
-                    item.get(
-                        "modified",
+                    item["device_name"] = device.get(
+                        "device_name",
                         ""
                     )
 
-            })
+                    events.append(item)
 
+            # --------------------------------------------------------
+            # CREATE TIMELINE
+            # --------------------------------------------------------
 
-        # --------------------------------------------------
-        # ADS
-        # --------------------------------------------------
+            self.timeline = create_timeline(
+                events
+            )
 
-        for item in self.ads_findings:
+        except Exception:
 
-            timeline_events.append({
+            logger.exception(
+                "Timeline creation failed"
+            )
 
-                "type":
-                    "ALTERNATE_DATA_STREAM",
+            self.timeline = []
 
-                "description":
-                    "NTFS Alternate Data Stream detected",
-
-                "path":
-                    item.get(
-                        "path",
-                        ""
-                    ),
-
-                "severity":
-                    "REVIEW",
-
-                "source":
-                    "ADS Analyzer"
-
-            })
-
-
-        self.timeline = create_timeline(
-            timeline_events
-        )
-
-
-    # ======================================================
+    # ================================================================
     # DISPLAY RESULTS
-    # ======================================================
+    # ================================================================
 
     def display_results(self):
 
-        self.progress.stop()
-
-        self.investigation_running = False
-
-        self.start_button.config(
-            state="normal"
-        )
-
-
-        self.status_label.config(
-            text="Investigation completed successfully."
-        )
-
-
-        self.dashboard_status.config(
-            text="Investigation completed successfully."
-        )
-
-
-        self.dashboard_path.config(
-            text="Evidence Source: " +
-            self.evidence_path
-        )
-
-
-        # --------------------------------------------------
-        # Dashboard counts
-        # --------------------------------------------------
-
-        self.dashboard_values[
-            "files"
-        ].config(
-            text=str(
-                self.filesystem_result.get(
-                    "file_count",
-                    0
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "folders"
-        ].config(
-            text=str(
-                self.filesystem_result.get(
-                    "folder_count",
-                    0
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "timestamps"
-        ].config(
-            text=str(
-                len(
-                    self.timestamp_findings
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "suspicious"
-        ].config(
-            text=str(
-                len(
-                    self.suspicious_files
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "programs"
-        ].config(
-            text=str(
-                len(
-                    self.programs
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "usb"
-        ].config(
-            text=str(
-                len(
-                    self.usb_devices
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "events"
-        ].config(
-            text=str(
-                len(
-                    self.events
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "ads"
-        ].config(
-            text=str(
-                len(
-                    self.ads_findings
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "browser"
-        ].config(
-            text=str(
-                len(
-                    self.browser_findings
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "prefetch"
-        ].config(
-            text=str(
-                len(
-                    self.prefetch_results
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "recycle"
-        ].config(
-            text=str(
-                len(
-                    self.recycle_results
-                )
-            )
-        )
-
-
-        self.dashboard_values[
-            "correlation"
-        ].config(
-            text=str(
-                len(
-                    self.all_findings
-                )
-            )
-        )
-
-
-        # --------------------------------------------------
-        # Display category data
-        # --------------------------------------------------
+        self.display_dashboard()
 
         self.display_filesystem()
 
@@ -1177,136 +805,242 @@ class ForensicApplication(object):
 
         self.display_prefetch()
 
-        self.display_recycle()
+        self.display_recycle_bin()
 
         self.display_timeline()
 
         self.display_correlation()
 
-        self.display_reports()
+        self.progress.stop()
 
-
-    # ======================================================
-    # GENERIC TABLE
-    # ======================================================
-
-    def clear_frame(self, frame):
-
-        for widget in frame.winfo_children():
-
-            widget.destroy()
-
-
-    def create_table(
-        self,
-        frame,
-        columns
-    ):
-
-        self.clear_frame(
-            frame
+        self.start_button.config(
+            state="normal"
         )
 
+        self.investigation_running = False
 
-        container = tk.Frame(
-            frame
+        self.status_label.config(
+            text="Investigation completed successfully."
         )
 
-        container.pack(
-            fill="both",
-            expand=True
+    # ================================================================
+    # DASHBOARD
+    # ================================================================
+
+    def display_dashboard(self):
+
+        self.dashboard_text.delete(
+            "1.0",
+            tk.END
         )
 
-
-        tree = ttk.Treeview(
-            container,
-            columns=columns,
-            show="headings"
+        folders = self.filesystem_result.get(
+            "folders",
+            0
         )
-
-
-        vertical = ttk.Scrollbar(
-            container,
-            orient="vertical",
-            command=tree.yview
-        )
-
-
-        horizontal = ttk.Scrollbar(
-            container,
-            orient="horizontal",
-            command=tree.xview
-        )
-
-
-        tree.configure(
-            yscrollcommand=vertical.set,
-            xscrollcommand=horizontal.set
-        )
-
-
-        vertical.pack(
-            side="right",
-            fill="y"
-        )
-
-
-        horizontal.pack(
-            side="bottom",
-            fill="x"
-        )
-
-
-        tree.pack(
-            side="left",
-            fill="both",
-            expand=True
-        )
-
-
-        for column in columns:
-
-            tree.heading(
-                column,
-                text=column
-            )
-
-            tree.column(
-                column,
-                width=180,
-                anchor="w"
-            )
-
-
-        return tree
-
-
-    # ======================================================
-    # FILE SYSTEM
-    # ======================================================
-
-    def display_filesystem(self):
-
-        tree = self.create_table(
-            self.files_tab,
-            (
-                "Name",
-                "Path",
-                "Extension",
-                "Size",
-                "Created",
-                "Modified",
-                "Accessed",
-                "Hidden"
-            )
-        )
-
 
         files = self.filesystem_result.get(
             "files",
             []
         )
 
+        text = ""
+
+        text += "=" * 70
+        text += "\n"
+        text += "WINDOWS EVIDENCE TRIAGE & ANTI-FORENSICS ANALYZER\n"
+        text += "=" * 70
+        text += "\n\n"
+
+        text += "Evidence Path : {}\n".format(
+            self.evidence_path
+        )
+
+        text += "Folders       : {}\n".format(
+            folders
+        )
+
+        text += "Files         : {}\n".format(
+            len(files)
+        )
+
+        text += "Timestamp Findings : {}\n".format(
+            len(self.timestamp_findings)
+        )
+
+        text += "Suspicious Files   : {}\n".format(
+            len(self.suspicious_files)
+        )
+
+        text += "Installed Programs : {}\n".format(
+            len(self.programs)
+        )
+
+        text += "USB Devices        : {}\n".format(
+            len(self.usb_devices)
+        )
+
+        text += "Event Logs         : {}\n".format(
+            len(self.events)
+        )
+
+        text += "ADS Findings       : {}\n".format(
+            len(self.ads_findings)
+        )
+
+        text += "Browser Findings   : {}\n".format(
+            len(self.browser_findings)
+        )
+
+        text += "Prefetch Records   : {}\n".format(
+            len(self.prefetch_results)
+            if isinstance(
+                self.prefetch_results,
+                list
+            )
+            else 0
+        )
+
+        text += "Recycle Bin Records: {}\n".format(
+            len(self.recycle_results)
+            if isinstance(
+                self.recycle_results,
+                list
+            )
+            else 0
+        )
+
+        text += "\n"
+        text += "=" * 70
+        text += "\n"
+
+        self.dashboard_text.insert(
+            tk.END,
+            text
+        )
+
+    # ================================================================
+    # TREEVIEW HELPER
+    # ================================================================
+
+    def create_treeview(
+        self,
+        parent,
+        columns,
+        headings=None
+    ):
+
+        frame = ttk.Frame(
+            parent
+        )
+
+        frame.pack(
+            fill="both",
+            expand=True
+        )
+
+        tree = ttk.Treeview(
+            frame,
+            columns=columns,
+            show="headings"
+        )
+
+        if headings is None:
+
+            headings = columns
+
+        for column in columns:
+
+            tree.heading(
+                column,
+                text=headings[
+                    columns.index(column)
+                ]
+            )
+
+            tree.column(
+                column,
+                width=150,
+                anchor="w"
+            )
+
+        vertical = ttk.Scrollbar(
+            frame,
+            orient="vertical",
+            command=tree.yview
+        )
+
+        horizontal = ttk.Scrollbar(
+            frame,
+            orient="horizontal",
+            command=tree.xview
+        )
+
+        tree.configure(
+            yscrollcommand=vertical.set,
+            xscrollcommand=horizontal.set
+        )
+
+        tree.grid(
+            row=0,
+            column=0,
+            sticky="nsew"
+        )
+
+        vertical.grid(
+            row=0,
+            column=1,
+            sticky="ns"
+        )
+
+        horizontal.grid(
+            row=1,
+            column=0,
+            sticky="ew"
+        )
+
+        frame.rowconfigure(
+            0,
+            weight=1
+        )
+
+        frame.columnconfigure(
+            0,
+            weight=1
+        )
+
+        return tree
+
+    # ================================================================
+    # FILE SYSTEM
+    # ================================================================
+
+    def display_filesystem(self):
+
+        for widget in self.filesystem_tab.winfo_children():
+
+            widget.destroy()
+
+        files = self.filesystem_result.get(
+            "files",
+            []
+        )
+
+        columns = (
+            "name",
+            "path",
+            "extension",
+            "size",
+            "created",
+            "modified",
+            "accessed",
+            "hidden"
+        )
+
+        tree = self.create_treeview(
+            self.filesystem_tab,
+            columns
+        )
 
         for item in files:
 
@@ -1325,193 +1059,135 @@ class ForensicApplication(object):
                 )
             )
 
-
-    # ======================================================
+    # ================================================================
     # TIMESTAMPS
-    # ======================================================
+    # ================================================================
 
     def display_timestamps(self):
 
-        tree = self.create_table(
-            self.timestamp_tab,
-            (
-                "File",
-                "Path",
-                "Created",
-                "Modified",
-                "Accessed",
-                "Findings"
-            )
+        for widget in self.timestamps_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "path",
+            "created",
+            "modified",
+            "accessed",
+            "reason"
         )
 
+        tree = self.create_treeview(
+            self.timestamps_tab,
+            columns
+        )
 
         for item in self.timestamp_findings:
 
-            findings = "; ".join(
-                [
-                    str(x)
-                    for x in item.get(
-                        "findings",
-                        []
+            if isinstance(item, dict):
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        item.get(
+                            "path",
+                            item.get("name", "")
+                        ),
+                        item.get(
+                            "created_time",
+                            ""
+                        ),
+                        item.get(
+                            "modified_time",
+                            ""
+                        ),
+                        item.get(
+                            "accessed_time",
+                            ""
+                        ),
+                        item.get(
+                            "reason",
+                            item.get(
+                                "description",
+                                ""
+                            )
+                        )
                     )
-                ]
-            )
-
-
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    item.get("name", ""),
-                    item.get("path", ""),
-                    item.get("created", ""),
-                    item.get("modified", ""),
-                    item.get("accessed", ""),
-                    findings
                 )
-            )
 
-
-    # ======================================================
+    # ================================================================
     # SUSPICIOUS FILES
-    # ======================================================
+    # ================================================================
 
     def display_suspicious_files(self):
 
-        tree = self.create_table(
-            self.suspicious_tab,
-            (
-                "Type",
-                "Severity",
-                "File",
-                "Description"
-            )
+        for widget in self.suspicious_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "path",
+            "risk",
+            "reason"
         )
 
+        tree = self.create_treeview(
+            self.suspicious_tab,
+            columns
+        )
 
         for item in self.suspicious_files:
 
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    item.get("type", ""),
-                    item.get("severity", ""),
-                    item.get("file", ""),
-                    item.get("description", "")
+            if isinstance(item, dict):
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        item.get(
+                            "path",
+                            item.get("name", "")
+                        ),
+                        item.get(
+                            "risk",
+                            ""
+                        ),
+                        item.get(
+                            "reason",
+                            item.get(
+                                "description",
+                                ""
+                            )
+                        )
+                    )
                 )
-            )
 
-
-    # ======================================================
+    # ================================================================
     # REGISTRY
-    # ======================================================
+    # ================================================================
 
     def display_registry(self):
 
-        tree = self.create_table(
+        for widget in self.registry_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "name",
+            "version",
+            "publisher",
+            "install_date"
+        )
+
+        tree = self.create_treeview(
             self.registry_tab,
-            (
-                "Installed Program",
-            )
+            columns
         )
 
+        for item in self.programs:
 
-        for program in self.programs:
-
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    str(program),
-                )
-            )
-
-
-    # ======================================================
-    # USB
-    # ======================================================
-
-    def display_usb(self):
-
-        tree = self.create_table(
-            self.usb_tab,
-            (
-                "Device Name",
-                "Serial Number"
-            )
-        )
-
-
-        for device in self.usb_devices:
-
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    device.get(
-                        "device_name",
-                        ""
-                    ),
-                    device.get(
-                        "serial_number",
-                        ""
-                    )
-                )
-            )
-
-
-    # ======================================================
-    # EVENTS
-    # ======================================================
-
-    def display_events(self):
-
-        tree = self.create_table(
-            self.events_tab,
-            (
-                "Security Event Data",
-            )
-        )
-
-
-        for event in self.events:
-
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    str(event),
-                )
-            )
-
-
-    # ======================================================
-    # ADS
-    # ======================================================
-
-    def display_ads(self):
-
-        tree = self.create_table(
-            self.ads_tab,
-            (
-                "File",
-                "Path",
-                "Stream",
-                "Size"
-            )
-        )
-
-
-        for item in self.ads_findings:
-
-            streams = item.get(
-                "streams",
-                []
-            )
-
-
-            for stream in streams:
+            if isinstance(item, dict):
 
                 tree.insert(
                     "",
@@ -1522,221 +1198,632 @@ class ForensicApplication(object):
                             ""
                         ),
                         item.get(
-                            "path",
+                            "version",
                             ""
                         ),
-                        stream.get(
-                            "stream_name",
+                        item.get(
+                            "publisher",
                             ""
                         ),
-                        stream.get(
-                            "size_bytes",
+                        item.get(
+                            "install_date",
                             ""
                         )
                     )
                 )
 
+            else:
 
-    # ======================================================
-    # BROWSER
-    # ======================================================
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        str(item),
+                        "",
+                        "",
+                        ""
+                    )
+                )
 
-    def display_browser(self):
+    # ================================================================
+    # USB
+    # ================================================================
 
-        tree = self.create_table(
-            self.browser_tab,
-            (
-                "Browser",
-                "History Exists",
-                "History Count",
-                "Downloads"
-            )
+    def display_usb(self):
+
+        for widget in self.usb_tab.winfo_children():
+
+            widget.destroy()
+
+        # ------------------------------------------------------------
+        # TITLE
+        # ------------------------------------------------------------
+
+        title = ttk.Label(
+            self.usb_tab,
+            text="USB Device Evidence"
         )
 
+        title.pack(
+            anchor="w",
+            padx=10,
+            pady=5
+        )
 
-        for item in self.browser_results:
+        # ------------------------------------------------------------
+        # MAIN USB TREE
+        # ------------------------------------------------------------
+
+        main_frame = ttk.Frame(
+            self.usb_tab
+        )
+
+        main_frame.pack(
+            fill="both",
+            expand=True,
+            padx=5,
+            pady=5
+        )
+
+        columns = (
+            "device",
+            "manufacturer",
+            "serial",
+            "first_observed",
+            "last_observed",
+            "observation_count",
+            "source"
+        )
+
+        tree = ttk.Treeview(
+            main_frame,
+            columns=columns,
+            show="headings",
+            height=12
+        )
+
+        headings = {
+            "device": "Device",
+            "manufacturer": "Manufacturer",
+            "serial": "Serial Number",
+            "first_observed": "First Observed",
+            "last_observed": "Last Observed",
+            "observation_count": "Observation Count",
+            "source": "Evidence Source"
+        }
+
+        widths = {
+            "device": 220,
+            "manufacturer": 150,
+            "serial": 180,
+            "first_observed": 180,
+            "last_observed": 180,
+            "observation_count": 130,
+            "source": 180
+        }
+
+        for column in columns:
+
+            tree.heading(
+                column,
+                text=headings[column]
+            )
+
+            tree.column(
+                column,
+                width=widths[column],
+                anchor="w"
+            )
+
+        scrollbar = ttk.Scrollbar(
+            main_frame,
+            orient="vertical",
+            command=tree.yview
+        )
+
+        tree.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        tree.pack(
+            side="left",
+            fill="both",
+            expand=True
+        )
+
+        scrollbar.pack(
+            side="right",
+            fill="y"
+        )
+
+        # ------------------------------------------------------------
+        # INSERT DEVICES
+        # ------------------------------------------------------------
+
+        for index, device in enumerate(
+            self.usb_devices
+        ):
+
+            if not isinstance(
+                device,
+                dict
+            ):
+
+                continue
+
+            observations = device.get(
+                "observations",
+                []
+            )
 
             tree.insert(
                 "",
                 "end",
+                iid=str(index),
                 values=(
+                    device.get(
+                        "device_name",
+                        ""
+                    ),
+                    device.get(
+                        "manufacturer",
+                        ""
+                    ),
+                    device.get(
+                        "serial_number",
+                        ""
+                    ),
+                    device.get(
+                        "first_observed",
+                        ""
+                    ),
+                    device.get(
+                        "last_observed",
+                        ""
+                    ),
+                    device.get(
+                        "connection_count",
+                        len(observations)
+                    ),
+                    device.get(
+                        "evidence_source",
+                        ""
+                    )
+                )
+            )
+
+        # ------------------------------------------------------------
+        # OBSERVATION DETAILS
+        # ------------------------------------------------------------
+
+        detail_label = ttk.Label(
+            self.usb_tab,
+            text=(
+                "Observation History "
+                "(installation/observation evidence; "
+                "not guaranteed exact physical insertion count)"
+            )
+        )
+
+        detail_label.pack(
+            anchor="w",
+            padx=10,
+            pady=(5, 2)
+        )
+
+        detail_frame = ttk.Frame(
+            self.usb_tab
+        )
+
+        detail_frame.pack(
+            fill="both",
+            expand=True,
+            padx=5,
+            pady=5
+        )
+
+        detail_columns = (
+            "timestamp",
+            "event",
+            "source",
+            "detail"
+        )
+
+        detail_tree = ttk.Treeview(
+            detail_frame,
+            columns=detail_columns,
+            show="headings"
+        )
+
+        detail_headings = {
+            "timestamp": "Timestamp",
+            "event": "Event",
+            "source": "Source",
+            "detail": "Detail"
+        }
+
+        for column in detail_columns:
+
+            detail_tree.heading(
+                column,
+                text=detail_headings[column]
+            )
+
+            detail_tree.column(
+                column,
+                width=200,
+                anchor="w"
+            )
+
+        detail_scroll = ttk.Scrollbar(
+            detail_frame,
+            orient="vertical",
+            command=detail_tree.yview
+        )
+
+        detail_tree.configure(
+            yscrollcommand=detail_scroll.set
+        )
+
+        detail_tree.pack(
+            side="left",
+            fill="both",
+            expand=True
+        )
+
+        detail_scroll.pack(
+            side="right",
+            fill="y"
+        )
+
+        # ------------------------------------------------------------
+        # SELECT DEVICE
+        # ------------------------------------------------------------
+
+        def show_usb_observations(event):
+
+            selection = tree.selection()
+
+            detail_tree.delete(
+                *detail_tree.get_children()
+            )
+
+            if not selection:
+
+                return
+
+            selected_id = selection[0]
+
+            try:
+
+                index = int(
+                    selected_id
+                )
+
+            except ValueError:
+
+                return
+
+            if index >= len(
+                self.usb_devices
+            ):
+
+                return
+
+            device = self.usb_devices[
+                index
+            ]
+
+            observations = device.get(
+                "observations",
+                []
+            )
+
+            for observation in observations:
+
+                if not isinstance(
+                    observation,
+                    dict
+                ):
+
+                    continue
+
+                detail_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        observation.get(
+                            "timestamp",
+                            ""
+                        ),
+                        observation.get(
+                            "event",
+                            ""
+                        ),
+                        observation.get(
+                            "source",
+                            ""
+                        ),
+                        observation.get(
+                            "detail",
+                            ""
+                        )
+                    )
+                )
+
+        tree.bind(
+            "<<TreeviewSelect>>",
+            show_usb_observations
+        )
+
+    # ================================================================
+    # EVENT LOGS
+    # ================================================================
+
+    def display_events(self):
+
+        for widget in self.events_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "time",
+            "event_id",
+            "level",
+            "message"
+        )
+
+        tree = self.create_treeview(
+            self.events_tab,
+            columns
+        )
+
+        for item in self.events:
+
+            if isinstance(item, dict):
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        item.get(
+                            "timestamp",
+                            item.get(
+                                "time",
+                                ""
+                            )
+                        ),
+                        item.get(
+                            "event_id",
+                            item.get(
+                                "id",
+                                ""
+                            )
+                        ),
+                        item.get(
+                            "level",
+                            ""
+                        ),
+                        item.get(
+                            "message",
+                            item.get(
+                                "description",
+                                ""
+                            )
+                        )
+                    )
+                )
+
+    # ================================================================
+    # ADS
+    # ================================================================
+
+    def display_ads(self):
+
+        for widget in self.ads_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "path",
+            "stream",
+            "size"
+        )
+
+        tree = self.create_treeview(
+            self.ads_tab,
+            columns
+        )
+
+        for item in self.ads_findings:
+
+            if isinstance(item, dict):
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        item.get(
+                            "path",
+                            ""
+                        ),
+                        item.get(
+                            "stream",
+                            item.get(
+                                "name",
+                                ""
+                            )
+                        ),
+                        item.get(
+                            "size",
+                            item.get(
+                                "size_bytes",
+                                ""
+                            )
+                        )
+                    )
+                )
+
+    # ================================================================
+    # BROWSER
+    # ================================================================
+
+    def display_browser(self):
+
+        for widget in self.browser_tab.winfo_children():
+
+            widget.destroy()
+
+        # ------------------------------------------------------------
+        # INNER NOTEBOOK
+        # ------------------------------------------------------------
+
+        browser_notebook = ttk.Notebook(
+            self.browser_tab
+        )
+
+        browser_notebook.pack(
+            fill="both",
+            expand=True,
+            padx=5,
+            pady=5
+        )
+
+        history_tab = ttk.Frame(
+            browser_notebook
+        )
+
+        search_tab = ttk.Frame(
+            browser_notebook
+        )
+
+        downloads_tab = ttk.Frame(
+            browser_notebook
+        )
+
+        deleted_tab = ttk.Frame(
+            browser_notebook
+        )
+
+        cleanup_tab = ttk.Frame(
+            browser_notebook
+        )
+
+        browser_notebook.add(
+            history_tab,
+            text="History"
+        )
+
+        browser_notebook.add(
+            search_tab,
+            text="Search Activity"
+        )
+
+        browser_notebook.add(
+            downloads_tab,
+            text="Downloads"
+        )
+
+        browser_notebook.add(
+            deleted_tab,
+            text="Deleted / Recoverable"
+        )
+
+        browser_notebook.add(
+            cleanup_tab,
+            text="Cleanup Indicators"
+        )
+
+        # ------------------------------------------------------------
+        # GET DATA
+        # ------------------------------------------------------------
+
+        results = self.browser_results
+
+        if not isinstance(
+            results,
+            dict
+        ):
+
+            results = {}
+
+        history_records = results.get(
+            "history_records",
+            []
+        )
+
+        search_records = results.get(
+            "search_records",
+            []
+        )
+
+        download_records = results.get(
+            "download_records",
+            []
+        )
+
+        deleted_records = results.get(
+            "deleted_records",
+            []
+        )
+
+        cleanup_records = results.get(
+            "cleanup_indicators",
+            []
+        )
+
+        # ------------------------------------------------------------
+        # HISTORY
+        # ------------------------------------------------------------
+
+        history_columns = (
+            "datetime",
+            "browser",
+            "url",
+            "title",
+            "visit_count",
+            "source"
+        )
+
+        history_tree = self.create_treeview(
+            history_tab,
+            history_columns
+        )
+
+        for item in history_records:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+
+                continue
+
+            history_tree.insert(
+                "",
+                "end",
+                values=(
+                    item.get(
+                        "datetime",
+                        item.get(
+                            "visit_time",
+                            ""
+                        )
+                    ),
                     item.get(
                         "browser",
                         ""
                     ),
                     item.get(
-                        "history_exists",
-                        False
-                    ),
-                    item.get(
-                        "history_count",
-                        0
-                    ),
-                    item.get(
-                        "download_count",
-                        0
-                    )
-                )
-            )
-
-
-    # ======================================================
-    # PREFETCH
-    # ======================================================
-
-    def display_prefetch(self):
-
-        tree = self.create_table(
-            self.prefetch_tab,
-            (
-                "Name",
-                "Path",
-                "Size",
-                "Created",
-                "Modified"
-            )
-        )
-
-
-        for item in self.prefetch_results:
-
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    item.get(
-                        "name",
+                        "url",
                         ""
                     ),
                     item.get(
-                        "path",
+                        "title",
                         ""
                     ),
                     item.get(
-                        "size",
-                        item.get(
-                            "size_bytes",
-                            ""
-                        )
-                    ),
-                    item.get(
-                        "created",
-                        item.get(
-                            "created_time",
-                            ""
-                        )
-                    ),
-                    item.get(
-                        "modified",
-                        item.get(
-                            "modified_time",
-                            ""
-                        )
-                    )
-                )
-            )
-
-
-    # ======================================================
-    # RECYCLE BIN
-    # ======================================================
-
-    def display_recycle(self):
-
-        tree = self.create_table(
-            self.recycle_tab,
-            (
-                "Name",
-                "Path",
-                "Size",
-                "Created",
-                "Modified"
-            )
-        )
-
-
-        for item in self.recycle_results:
-
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    item.get(
-                        "name",
-                        ""
-                    ),
-                    item.get(
-                        "path",
-                        ""
-                    ),
-                    item.get(
-                        "size",
-                        item.get(
-                            "size_bytes",
-                            ""
-                        )
-                    ),
-                    item.get(
-                        "created",
-                        item.get(
-                            "created_time",
-                            ""
-                        )
-                    ),
-                    item.get(
-                        "modified",
-                        item.get(
-                            "modified_time",
-                            ""
-                        )
-                    )
-                )
-            )
-
-
-    # ======================================================
-    # TIMELINE
-    # ======================================================
-
-    def display_timeline(self):
-
-        tree = self.create_table(
-            self.timeline_tab,
-            (
-                "Timestamp",
-                "Type",
-                "Description",
-                "Path",
-                "Severity",
-                "Source"
-            )
-        )
-
-
-        for item in self.timeline:
-
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    item.get(
-                        "timestamp",
-                        "UNKNOWN TIME"
-                    ),
-                    item.get(
-                        "type",
-                        ""
-                    ),
-                    item.get(
-                        "description",
-                        ""
-                    ),
-                    item.get(
-                        "path",
-                        ""
-                    ),
-                    item.get(
-                        "severity",
+                        "visit_count",
                         ""
                     ),
                     item.get(
@@ -1746,45 +1833,179 @@ class ForensicApplication(object):
                 )
             )
 
+        # ------------------------------------------------------------
+        # SEARCH ACTIVITY
+        # ------------------------------------------------------------
 
-    # ======================================================
-    # CORRELATION
-    # ======================================================
-
-    def display_correlation(self):
-
-        tree = self.create_table(
-            self.correlation_tab,
-            (
-                "Category",
-                "Type",
-                "Severity",
-                "File",
-                "Description"
-            )
+        search_columns = (
+            "datetime",
+            "browser",
+            "engine",
+            "query",
+            "url",
+            "source"
         )
 
+        search_tree = self.create_treeview(
+            search_tab,
+            search_columns
+        )
 
-        for item in self.all_findings:
+        for item in search_records:
 
-            tree.insert(
+            if not isinstance(
+                item,
+                dict
+            ):
+
+                continue
+
+            search_tree.insert(
                 "",
                 "end",
                 values=(
                     item.get(
-                        "category",
+                        "datetime",
+                        item.get(
+                            "visit_time",
+                            ""
+                        )
+                    ),
+                    item.get(
+                        "browser",
                         ""
                     ),
                     item.get(
-                        "type",
+                        "search_engine",
+                        item.get(
+                            "engine",
+                            ""
+                        )
+                    ),
+                    item.get(
+                        "search_query",
+                        item.get(
+                            "query",
+                            ""
+                        )
+                    ),
+                    item.get(
+                        "url",
                         ""
                     ),
                     item.get(
-                        "severity",
+                        "source",
+                        ""
+                    )
+                )
+            )
+
+        # ------------------------------------------------------------
+        # DOWNLOADS
+        # ------------------------------------------------------------
+
+        download_columns = (
+            "browser",
+            "file",
+            "download_time",
+            "url",
+            "local_path",
+            "source"
+        )
+
+        download_tree = self.create_treeview(
+            downloads_tab,
+            download_columns
+        )
+
+        for item in download_records:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+
+                continue
+
+            download_tree.insert(
+                "",
+                "end",
+                values=(
+                    item.get(
+                        "browser",
                         ""
                     ),
                     item.get(
-                        "file",
+                        "file_name",
+                        item.get(
+                            "file",
+                            ""
+                        )
+                    ),
+                    item.get(
+                        "download_time",
+                        item.get(
+                            "datetime",
+                            ""
+                        )
+                    ),
+                    item.get(
+                        "url",
+                        ""
+                    ),
+                    item.get(
+                        "local_path",
+                        item.get(
+                            "path",
+                            ""
+                        )
+                    ),
+                    item.get(
+                        "source",
+                        ""
+                    )
+                )
+            )
+
+        # ------------------------------------------------------------
+        # DELETED / RECOVERABLE
+        # ------------------------------------------------------------
+
+        deleted_columns = (
+            "browser",
+            "status",
+            "source",
+            "description"
+        )
+
+        deleted_tree = self.create_treeview(
+            deleted_tab,
+            deleted_columns
+        )
+
+        for item in deleted_records:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+
+                continue
+
+            deleted_tree.insert(
+                "",
+                "end",
+                values=(
+                    item.get(
+                        "browser",
+                        ""
+                    ),
+                    item.get(
+                        "status",
+                        "Recovery Indicator"
+                    ),
+                    item.get(
+                        "source",
                         ""
                     ),
                     item.get(
@@ -1794,165 +2015,334 @@ class ForensicApplication(object):
                 )
             )
 
+        # ------------------------------------------------------------
+        # CLEANUP INDICATORS
+        # ------------------------------------------------------------
 
-    # ======================================================
-    # REPORTS
-    # ======================================================
-
-    def display_reports(self):
-
-        self.clear_frame(
-            self.reports_tab
+        cleanup_columns = (
+            "type",
+            "description"
         )
 
+        cleanup_tree = self.create_treeview(
+            cleanup_tab,
+            cleanup_columns
+        )
 
-        title = tk.Label(
+        for item in cleanup_records:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+
+                continue
+
+            cleanup_tree.insert(
+                "",
+                "end",
+                values=(
+                    item.get(
+                        "type",
+                        ""
+                    ),
+                    item.get(
+                        "description",
+                        ""
+                    )
+                )
+            )
+
+    # ================================================================
+    # PREFETCH
+    # ================================================================
+
+    def display_prefetch(self):
+
+        for widget in self.prefetch_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "file",
+            "path",
+            "run_count",
+            "last_run"
+        )
+
+        tree = self.create_treeview(
+            self.prefetch_tab,
+            columns
+        )
+
+        for item in self.prefetch_results:
+
+            if isinstance(item, dict):
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        item.get(
+                            "file_name",
+                            item.get(
+                                "name",
+                                ""
+                            )
+                        ),
+                        item.get(
+                            "path",
+                            ""
+                        ),
+                        item.get(
+                            "run_count",
+                            ""
+                        ),
+                        item.get(
+                            "last_run",
+                            ""
+                        )
+                    )
+                )
+
+    # ================================================================
+    # RECYCLE BIN
+    # ================================================================
+
+    def display_recycle_bin(self):
+
+        for widget in self.recycle_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "name",
+            "original_path",
+            "deleted_time",
+            "size"
+        )
+
+        tree = self.create_treeview(
+            self.recycle_tab,
+            columns
+        )
+
+        for item in self.recycle_results:
+
+            if isinstance(item, dict):
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        item.get(
+                            "name",
+                            ""
+                        ),
+                        item.get(
+                            "original_path",
+                            ""
+                        ),
+                        item.get(
+                            "deleted_time",
+                            ""
+                        ),
+                        item.get(
+                            "size",
+                            item.get(
+                                "size_bytes",
+                                ""
+                            )
+                        )
+                    )
+                )
+
+    # ================================================================
+    # TIMELINE
+    # ================================================================
+
+    def display_timeline(self):
+
+        for widget in self.timeline_tab.winfo_children():
+
+            widget.destroy()
+
+        columns = (
+            "timestamp",
+            "source",
+            "event",
+            "description"
+        )
+
+        tree = self.create_treeview(
+            self.timeline_tab,
+            columns
+        )
+
+        for item in self.timeline:
+
+            if isinstance(item, dict):
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        item.get(
+                            "timestamp",
+                            ""
+                        ),
+                        item.get(
+                            "source",
+                            ""
+                        ),
+                        item.get(
+                            "event",
+                            ""
+                        ),
+                        item.get(
+                            "description",
+                            item.get(
+                                "detail",
+                                ""
+                            )
+                        )
+                    )
+                )
+
+    # ================================================================
+    # CORRELATION
+    # ================================================================
+
+    def display_correlation(self):
+
+        for widget in self.correlation_tab.winfo_children():
+
+            widget.destroy()
+
+        text = tk.Text(
+            self.correlation_tab,
+            wrap="word"
+        )
+
+        text.pack(
+            fill="both",
+            expand=True
+        )
+
+        text.insert(
+            tk.END,
+            "Correlated Findings\n"
+        )
+
+        text.insert(
+            tk.END,
+            "=" * 60
+        )
+
+        text.insert(
+            tk.END,
+            "\n\n"
+        )
+
+        if not self.all_findings:
+
+            text.insert(
+                tk.END,
+                "No correlated findings available."
+            )
+
+            return
+
+        for index, finding in enumerate(
+            self.all_findings,
+            start=1
+        ):
+
+            text.insert(
+                tk.END,
+                "{}. {}\n".format(
+                    index,
+                    finding.get(
+                        "category",
+                        ""
+                    )
+                )
+            )
+
+            text.insert(
+                tk.END,
+                "   {}\n\n".format(
+                    finding.get(
+                        "finding",
+                        ""
+                    )
+                )
+            )
+
+    # ================================================================
+    # REPORTS TAB
+    # ================================================================
+
+    def build_reports_tab(self):
+
+        for widget in self.reports_tab.winfo_children():
+
+            widget.destroy()
+
+        title = ttk.Label(
             self.reports_tab,
-            text="REPORT GENERATION",
-            font=("Segoe UI", 16, "bold")
+            text="Forensic Reports"
         )
 
         title.pack(
-            pady=30
+            pady=20
         )
 
-
-        info = tk.Label(
+        info = ttk.Label(
             self.reports_tab,
             text=(
-                "Report generation will use the collected "
-                "investigation data shown in the categories."
-            ),
-            font=("Segoe UI", 10)
+                "PDF, Excel and CSV report generation "
+                "will be connected here."
+            )
         )
 
         info.pack(
             pady=10
         )
 
-
-        button_frame = tk.Frame(
-            self.reports_tab
-        )
-
-        button_frame.pack(
-            pady=30
-        )
-
-
-        pdf_button = tk.Button(
-            button_frame,
-            text="GENERATE PDF REPORT",
-            width=25,
-            height=2,
-            state="disabled"
-        )
-
-        pdf_button.grid(
-            row=0,
-            column=0,
-            padx=10
-        )
-
-
-        excel_button = tk.Button(
-            button_frame,
-            text="EXPORT TO EXCEL",
-            width=25,
-            height=2,
-            state="disabled"
-        )
-
-        excel_button.grid(
-            row=0,
-            column=1,
-            padx=10
-        )
-
-
-        csv_button = tk.Button(
-            button_frame,
-            text="EXPORT TO CSV",
-            width=25,
-            height=2,
-            state="disabled"
-        )
-
-        csv_button.grid(
-            row=0,
-            column=2,
-            padx=10
-        )
-
-
-        note = tk.Label(
+        self.pdf_button = ttk.Button(
             self.reports_tab,
-            text=(
-                "PDF / Excel / CSV export will be connected "
-                "after the investigation data structure is corrected."
-            ),
-            font=("Segoe UI", 9)
+            text="Generate PDF Report",
+            state="disabled"
         )
 
-        note.pack(
-            pady=20
+        self.pdf_button.pack(
+            pady=5
         )
 
-
-    # ======================================================
-    # STATUS UPDATE
-    # ======================================================
-
-    def update_status(self, message):
-
-        self.root.after(
-            0,
-            lambda: self.status_label.config(
-                text=message
-            )
+        self.excel_button = ttk.Button(
+            self.reports_tab,
+            text="Export Excel",
+            state="disabled"
         )
 
-
-    # ======================================================
-    # ERROR
-    # ======================================================
-
-    def investigation_error(
-        self,
-        error
-    ):
-
-        self.progress.stop()
-
-        self.investigation_running = False
-
-        self.start_button.config(
-            state="normal"
+        self.excel_button.pack(
+            pady=5
         )
 
-
-        self.status_label.config(
-            text="Investigation failed."
+        self.csv_button = ttk.Button(
+            self.reports_tab,
+            text="Export CSV",
+            state="disabled"
         )
 
-
-        self.dashboard_status.config(
-            text="Investigation failed."
+        self.csv_button.pack(
+            pady=5
         )
 
-
-        messagebox.showerror(
-            "Investigation Error",
-            "The investigation could not be completed.\n\n"
-            + str(error)
-            + "\n\n"
-            + "Check forensic_tool.log for details."
-        )
-
-
-    # ======================================================
+    # ================================================================
     # CLEAR DATA
-    # ======================================================
+    # ================================================================
 
     def clear_data(self):
 
@@ -1970,7 +2360,7 @@ class ForensicApplication(object):
 
         self.ads_findings = []
 
-        self.browser_results = []
+        self.browser_results = {}
 
         self.browser_findings = []
 
@@ -1982,26 +2372,73 @@ class ForensicApplication(object):
 
         self.timeline = []
 
+        self.dashboard_text.delete(
+            "1.0",
+            tk.END
+        )
 
-# ==========================================================
-# APPLICATION ENTRY POINT
-# ==========================================================
+        for tab in [
+            self.filesystem_tab,
+            self.timestamps_tab,
+            self.suspicious_tab,
+            self.registry_tab,
+            self.usb_tab,
+            self.events_tab,
+            self.ads_tab,
+            self.browser_tab,
+            self.prefetch_tab,
+            self.recycle_tab,
+            self.timeline_tab,
+            self.correlation_tab
+        ]:
 
-def main():
+            for widget in tab.winfo_children():
+
+                widget.destroy()
+
+    # ================================================================
+    # INVESTIGATION ERROR
+    # ================================================================
+
+    def investigation_error(
+        self,
+        error
+    ):
+
+        self.progress.stop()
+
+        self.start_button.config(
+            state="normal"
+        )
+
+        self.investigation_running = False
+
+        self.status_label.config(
+            text="Investigation failed."
+        )
+
+        messagebox.showerror(
+            "Investigation Error",
+            "The investigation failed.\n\n{}".format(
+                error
+            )
+        )
+
+        print(
+            traceback.format_exc()
+        )
+
+
+# ====================================================================
+# MAIN
+# ====================================================================
+
+if __name__ == "__main__":
 
     root = tk.Tk()
 
-    application = ForensicApplication(
+    app = ForensicApplication(
         root
     )
 
     root.mainloop()
-
-
-# ==========================================================
-# START
-# ==========================================================
-
-if __name__ == "__main__":
-
-    main()
