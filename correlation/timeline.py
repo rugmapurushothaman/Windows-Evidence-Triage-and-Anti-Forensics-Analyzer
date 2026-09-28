@@ -1,54 +1,159 @@
-"""
-timeline.py
+# correlation/timeline.py
 
-Investigation Timeline Generator
+import datetime
 
-Purpose:
---------
-Correlate forensic artifacts collected from multiple evidence sources
-to build a chronological investigation timeline.
+from utils.logger import get_logger
 
-Future Responsibilities:
-- Merge timestamps from multiple collectors
-- Sort events chronologically
-- Correlate user activity
-- Correlate USB activity
-- Correlate Event Logs
-- Correlate Browser Activity
-- Correlate File Activity
-- Generate investigation timeline
 
-Input:
-------
-Artifacts collected by all collectors.
+logger = get_logger("timeline")
 
-Output:
--------
-Chronological timeline of significant forensic events.
 
-Example Timeline:
------------------
-14:10 USB Device Connected
+def get_event_time(event):
 
-↓
+    """
+    Try to obtain the most useful timestamp
+    from an event.
+    """
 
-14:12 powershell.exe Executed
+    if not isinstance(event, dict):
+        return None
 
-↓
+    possible_fields = [
+        "timestamp",
+        "created_time",
+        "modified_time",
+        "accessed_time",
+        "time"
+    ]
 
-14:15 Security Log Cleared
+    for field in possible_fields:
 
-↓
+        value = event.get(field)
 
-14:16 Browser History Deleted
+        if value is not None:
+            return value
 
-↓
+    return None
 
-14:17 Recycle Bin Emptied
 
-Status:
--------
-Planned (Version 3.0)
-"""
+def normalize_time(value):
 
-# Implementation will be added in Version 3.0
+    if value is None:
+        return None
+
+    if isinstance(
+        value,
+        datetime.datetime
+    ):
+        return value
+
+    try:
+
+        return datetime.datetime.fromtimestamp(
+            float(value)
+        )
+
+    except Exception:
+
+        return None
+
+
+def create_timeline(events):
+
+    timeline = []
+
+    if not events:
+        return timeline
+
+    for event in events:
+
+        if not isinstance(event, dict):
+            continue
+
+        timestamp = get_event_time(
+            event
+        )
+
+        normalized_time = normalize_time(
+            timestamp
+        )
+
+        timeline.append({
+            "timestamp": normalized_time,
+            "type": event.get(
+                "type",
+                "UNKNOWN"
+            ),
+            "description": event.get(
+                "description",
+                event.get(
+                    "name",
+                    ""
+                )
+            ),
+            "path": event.get(
+                "path",
+                ""
+            ),
+            "severity": event.get(
+                "severity",
+                "INFO"
+            ),
+            "source": event.get(
+                "source",
+                "unknown"
+            )
+        })
+
+    # Events without timestamps go to the end
+    timeline.sort(
+        key=lambda item: (
+            item["timestamp"] is None,
+            item["timestamp"]
+        )
+    )
+
+    return timeline
+
+
+def print_timeline(timeline):
+
+    print("")
+    print("=" * 70)
+    print("Forensic Timeline")
+    print("=" * 70)
+
+    if not timeline:
+
+        print("No timeline events found.")
+        return
+
+    for event in timeline:
+
+        timestamp = event.get(
+            "timestamp"
+        )
+
+        if timestamp:
+
+            timestamp_text = timestamp.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+        else:
+
+            timestamp_text = "UNKNOWN TIME"
+
+        print(
+            "[{}] [{}] {}".format(
+                timestamp_text,
+                event.get(
+                    "type",
+                    "UNKNOWN"
+                ),
+                event.get(
+                    "description",
+                    ""
+                )
+            )
+        )
