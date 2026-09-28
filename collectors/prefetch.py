@@ -1,41 +1,81 @@
-"""
-prefetch.py
+# collectors/prefetch.py
 
-Windows Prefetch Collector
+import os
+import glob
 
-Purpose:
---------
-Collect Windows Prefetch artifacts from a live system or mounted forensic evidence.
+from utils.logger import get_logger
 
-Future Responsibilities:
-- Locate Windows Prefetch files (.pf)
-- Extract executed application names
-- Extract execution timestamps
-- Extract execution count
-- Extract referenced files and directories
-- Identify recently executed programs
-- Support forensic timeline generation
 
-Input:
-------
-- Mounted Windows drive
-- Windows Prefetch directory
-  (Windows\\Prefetch)
+logger = get_logger("prefetch_collector")
 
-Output:
--------
-Structured Prefetch artifact data for analysis by the analyzers and
-correlation engine.
 
-Example Output:
----------------
-Application: powershell.exe
-Last Run: 2026-08-05 14:12:33
-Run Count: 18
+def get_prefetch_directory():
 
-Status:
--------
-Planned (Version 2.0)
-"""
+    windows_directory = os.environ.get(
+        "WINDIR",
+        "C:\\Windows"
+    )
 
-# Implementation will be added in Version 2.0
+    return os.path.join(
+        windows_directory,
+        "Prefetch"
+    )
+
+
+def collect_prefetch():
+
+    results = []
+
+    prefetch_directory = get_prefetch_directory()
+
+    if not os.path.isdir(prefetch_directory):
+
+        logger.warning(
+            "Prefetch directory not found: %s",
+            prefetch_directory
+        )
+
+        return results
+
+    try:
+
+        pattern = os.path.join(
+            prefetch_directory,
+            "*.pf"
+        )
+
+        for file_path in glob.glob(pattern):
+
+            try:
+
+                stat_info = os.stat(
+                    file_path
+                )
+
+                results.append({
+                    "type": "PREFETCH",
+                    "name": os.path.basename(
+                        file_path
+                    ),
+                    "path": file_path,
+                    "size_bytes": stat_info.st_size,
+                    "created_time": stat_info.st_ctime,
+                    "modified_time": stat_info.st_mtime,
+                    "accessed_time": stat_info.st_atime
+                })
+
+            except Exception as error:
+
+                logger.error(
+                    "Prefetch file error: %s",
+                    error
+                )
+
+    except Exception as error:
+
+        logger.error(
+            "Prefetch collection error: %s",
+            error
+        )
+
+    return results
